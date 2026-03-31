@@ -9,7 +9,8 @@ from src.cnn.model import get_model
 ds = SpectrogramDataset('data/spectrograms_split.csv', split='train')
 subset = Subset(ds, list(range(50)))
 loader = DataLoader(subset, batch_size=8)
-model = get_model()
+# Use random init for sanity check to avoid downloading pretrained weights.
+model = get_model(pretrained=False)
 
 for specs, labels in loader:
     out = model(specs)
@@ -18,4 +19,5 @@ for specs, labels in loader:
     print(f"Labels:       {labels}")
     break
 
-print("Sanity check passed ✓")
+print("Sanity check passed")
+

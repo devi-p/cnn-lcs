@@ -278,9 +278,7 @@ if __name__ == "__main__":
     OUTPUT_DIR = '/content/drive/MyDrive/cnn-lcs/interpretability'
 
     # Step 1: correlate CNN features with acoustic features
-    print("=" * 60)
     print("STEP 1: Correlating CNN features with acoustic properties")
-    print("=" * 60)
     corr_df = correlate_cnn_with_acoustic(
         cnn_features_path=f'{FEATURES_DIR}/train_features.npy',
         segments_csv=SEGMENTS_CSV,
@@ -290,9 +288,7 @@ if __name__ == "__main__":
     )
 
     # Step 2: generate readable rules
-    print("\n" + "=" * 60)
     print("STEP 2: Generating human readable rules")
-    print("=" * 60)
     readable_df = generate_readable_rules(
         rules_csv=f'{LCS_DIR}/rules.csv',
         correlations_csv=f'{OUTPUT_DIR}/cnn_acoustic_correlations.csv',
