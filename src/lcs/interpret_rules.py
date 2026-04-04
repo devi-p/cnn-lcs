@@ -3,6 +3,7 @@ import pandas as pd
 import librosa
 import os
 import sys
+import ast
 from pathlib import Path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 import pickle
@@ -199,12 +200,21 @@ def correlate_cnn_with_acoustic(
 def generate_readable_rules(
     rules_csv,
     correlations_csv,
-    output_dir
+    output_dir,
+    top_k=20,
+    min_numerosity=3,
+    min_accuracy=0.9
 ):
     """Generate human readable rule descriptions using acoustic correlations"""
 
     rules_df = pd.read_csv(rules_csv)
     corr_df = pd.read_csv(correlations_csv)
+    rules_df = rules_df.copy()
+    rules_df['source_rule_number'] = np.arange(1, len(rules_df) + 1)
+    if 'fitness' in rules_df.columns:
+        rules_df['rule_strength'] = rules_df['fitness'] * rules_df['numerosity']
+    else:
+        rules_df['rule_strength'] = rules_df['accuracy'] * rules_df['numerosity']
 
     # build lookup: cnn_feature_index -> acoustic description
     feature_lookup = {}
@@ -224,41 +234,66 @@ def generate_readable_rules(
 
         feature_lookup[idx] = description
 
-    print("\n=== Human Readable Rules ===\n")
+    filtered_df = rules_df[
+        (rules_df['numerosity'] >= min_numerosity) &
+        (rules_df['accuracy'] >= min_accuracy)
+    ].copy()
+
+    if filtered_df.empty:
+        print(
+            f"\nNo rules met filters (numerosity>={min_numerosity}, accuracy>={min_accuracy}). "
+            f"Falling back to top {top_k} strongest rules."
+        )
+        filtered_df = rules_df.copy()
+
+    filtered_df = filtered_df.sort_values(
+        ['rule_strength', 'accuracy', 'numerosity'],
+        ascending=False
+    ).head(top_k).reset_index(drop=True)
+
+    print(
+        f"\n=== Human Readable Rules (top {len(filtered_df)} | "
+        f"min_numerosity={min_numerosity}, min_accuracy={min_accuracy}) ===\n"
+    )
     readable_rules = []
 
-    for idx, row in rules_df.iterrows():
+    for idx, row in filtered_df.iterrows():
         try:
-            original_indices = eval(row['original_feature_indices'])
-            conditions = eval(row['condition'])
+            original_indices = ast.literal_eval(row['original_feature_indices'])
+            conditions = ast.literal_eval(row['condition'])
             prediction = row['prediction']
             accuracy = row['accuracy']
             numerosity = row['numerosity']
+            rule_strength = row['rule_strength']
+            source_rule_number = int(row['source_rule_number'])
 
             rule_parts = []
             for feat_idx, condition in zip(original_indices, conditions):
                 acoustic_desc = feature_lookup.get(feat_idx, f"CNN activation {feat_idx}")
-                low, high = condition[0], condition[1]
+                low = min(condition[0], condition[1])
+                high = max(condition[0], condition[1])
                 rule_parts.append(
                     f"    {acoustic_desc}\n"
                     f"      is between {low:.3f} and {high:.3f}"
                 )
 
             rule_text = (
-                f"Rule {idx+1}:\n"
+                f"Rule {idx+1} (source rule {source_rule_number}):\n"
                 f"  IF:\n" +
                 "\n  AND\n".join(rule_parts) +
                 f"\n  THEN: {prediction}\n"
-                f"  Accuracy: {accuracy:.4f} | Numerosity: {numerosity}\n"
+                f"  Accuracy: {accuracy:.4f} | Numerosity: {numerosity} | Strength: {rule_strength:.4f}\n"
             )
 
             print(rule_text)
             readable_rules.append({
                 'rule_number': idx + 1,
+                'source_rule_number': source_rule_number,
                 'readable_rule': rule_text,
                 'prediction': prediction,
                 'accuracy': accuracy,
-                'numerosity': numerosity
+                'numerosity': numerosity,
+                'rule_strength': rule_strength
             })
 
         except Exception as e:
