@@ -49,7 +49,7 @@ def train_lcs(
     np.save(f"{output_dir}/selected_feature_indices.npy", selected_indices)
 
     print("Training ExSTraCS...")
-    model = ExSTraCS(learning_iterations=50000, N=2000, nu=10)
+    model = ExSTraCS(learning_iterations=100000, N=3000, nu=10)
     model.fit(X_train, y_train)
 
     with open(f"{output_dir}/lcs_model.pkl", "wb") as file_obj:
