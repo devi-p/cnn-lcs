@@ -132,11 +132,12 @@ def correlate_cnn_with_acoustic(
         min(max_samples // 2, len(train_df[train_df['label'] == 1])),
         random_state=42
     )
-    sample_df = pd.concat([normal, anomalous]).reset_index(drop=True)
+    sample_df = pd.concat([normal, anomalous])
 
-    # get CNN features for these same samples
-    sample_indices = sample_df.index.tolist()
+    # Preserve original train_df row indices so CNN features and filepaths stay aligned.
+    sample_indices = sample_df.index.to_numpy()
     X_sample = X_all[sample_indices]
+    sample_df = sample_df.reset_index(drop=True)
 
     # extract only the selected features
     X_selected = X_sample[:, selected_indices]
