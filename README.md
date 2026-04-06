@@ -129,6 +129,86 @@ The training script now:
 - prints the best anomaly-class threshold search result (best threshold, precision, recall, F1)
 - prints a threshold `0.50` comparison for easy baseline tracking
 
+## CNN Features + LCS Safe Tuning
+
+### Extract frozen CNN features
+
+```bash
+python src/cnn/extract_features.py
+```
+
+Default local output:
+
+- `outputs/features/train_features.npy`
+- `outputs/features/train_labels.npy`
+- `outputs/features/test_features.npy`
+- `outputs/features/test_labels.npy`
+
+### Train one LCS candidate with non-regression gates
+
+```bash
+python src/lcs/train_lcs.py \
+  --k 100 \
+  --selector f_classif \
+  --learning-iterations 200000 \
+  --population-size 3000 \
+  --nu 8 \
+  --promote-if-pass
+```
+
+What this now does:
+
+- tunes decision threshold on a validation split (not on test)
+- evaluates test metrics at the validation-selected threshold
+- checks hard gates before promotion:
+  - accuracy `>= 0.9125`
+  - precision `>= 0.4640`
+  - recall `>= 0.3225`
+  - AUC `>= 0.7347`
+  - rule count `<= 3000`
+- writes run artifacts under `outputs/lcs/runs/<run_id>/`
+- writes `outputs/lcs/approved_model.json` only when all gates pass
+
+### Run the medium-budget sweep (12-20 runs)
+
+```bash
+python src/lcs/sweep_lcs.py --budget 16 --promote-best
+```
+
+Sweep outputs:
+
+- `outputs/lcs/sweeps/sweep_<timestamp>.csv` (ranked results)
+- `outputs/lcs/sweeps/sweep_<timestamp>.json` (summary)
+- `outputs/lcs/latest_gate_passing_run.json` (best safe run)
+
+## Web Demo (FastAPI + Next.js)
+
+### Run backend
+
+From project root:
+
+```bash
+pip install -r backend/requirements.txt
+uvicorn backend.main:app --reload
+```
+
+### Run frontend
+
+From `frontend/`:
+
+```bash
+npm install
+npm run dev
+```
+
+Optional frontend environment variable:
+
+```bash
+NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000
+```
+
+Open `http://localhost:3000`, upload a `.wav` clip, and run real anomaly inference through `POST /api/analyze-audio`.
+
 ## Expected Final Outputs
 
 - `data/dataset_split.csv`: `2400` rows
