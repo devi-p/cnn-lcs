@@ -114,6 +114,21 @@ Generates:
 - `outputs/bearing_spectrogram_sanity_check.png`
 - `outputs/gearbox_spectrogram_sanity_check.png`
 
+## CNN Training
+
+Run training (local or Colab):
+
+```bash
+PYTHONPATH=. python3 src/cnn/train.py
+```
+
+The training script now:
+
+- uses class-balanced sampling (`WeightedRandomSampler`) for training batches
+- keeps class-weighted cross-entropy loss to prioritize anomaly recall
+- prints the best anomaly-class threshold search result (best threshold, precision, recall, F1)
+- prints a threshold `0.50` comparison for easy baseline tracking
+
 ## Expected Final Outputs
 
 - `data/dataset_split.csv`: `2400` rows
