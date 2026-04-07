@@ -58,6 +58,7 @@ export function SiteHeader({ githubUrl }: SiteHeaderProps) {
 
           <nav
             id="mobile-site-nav"
+            aria-hidden={!isMobileMenuOpen}
             className={`${
               isMobileMenuOpen ? 'flex' : 'hidden'
             } flex-col gap-2 lg:hidden`}
