@@ -35,6 +35,13 @@ type AnalyzeResponse = {
 const API_BASE = (process.env.NEXT_PUBLIC_API_BASE_URL ?? '').replace(/\/$/, '');
 const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024;
 const MAX_DURATION_SECONDS = 15;
+const HEALTH_MAX_WAIT_MS = 75_000;
+const HEALTH_POLL_MS = 2_500;
+const HEALTH_STALE_MS = 30_000;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 async function getAudioDurationSeconds(file: File): Promise<number> {
   return new Promise((resolve, reject) => {
@@ -74,6 +81,7 @@ export function UploadAnalyzeCard() {
 
   const [backendStatus, setBackendStatus] = useState<'checking' | 'ready' | 'waking' | 'offline'>('checking');
   const [wakeSeconds, setWakeSeconds] = useState(0);
+  const [lastHealthAt, setLastHealthAt] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -84,6 +92,9 @@ export function UploadAnalyzeCard() {
         const res = await fetch(`${API_BASE}/api/health`, { method: 'GET' });
         if (!cancelled) {
           setBackendStatus(res.ok ? 'ready' : 'offline');
+          if (res.ok) {
+            setLastHealthAt(Date.now());
+          }
           if (wakeTimer) clearInterval(wakeTimer);
         }
       } catch {
@@ -97,6 +108,7 @@ export function UploadAnalyzeCard() {
               .then((res) => {
                 if (!cancelled && res.ok) {
                   setBackendStatus('ready');
+                  setLastHealthAt(Date.now());
                   if (wakeTimer) clearInterval(wakeTimer);
                 }
               })
@@ -178,6 +190,41 @@ export function UploadAnalyzeCard() {
     await handleFileSelect(event.dataTransfer.files?.[0] ?? null);
   };
 
+  const waitForBackendReady = useCallback(
+    async (signal: AbortSignal, maxWaitMs: number): Promise<boolean> => {
+      setBackendStatus('checking');
+      const start = Date.now();
+
+      while (Date.now() - start <= maxWaitMs) {
+        try {
+          const health = await fetch(`${API_BASE}/api/health`, {
+            method: 'GET',
+            cache: 'no-store',
+            signal,
+          });
+          if (health.ok) {
+            setBackendStatus('ready');
+            setWakeSeconds(0);
+            setLastHealthAt(Date.now());
+            return true;
+          }
+        } catch (healthError) {
+          if (healthError instanceof DOMException && healthError.name === 'AbortError') {
+            throw healthError;
+          }
+        }
+
+        setBackendStatus('waking');
+        setWakeSeconds(Math.floor((Date.now() - start) / 1000));
+        await sleep(HEALTH_POLL_MS);
+      }
+
+      setBackendStatus('offline');
+      return false;
+    },
+    []
+  );
+
   const analyzeFile = async () => {
     if (!file) {
       setError('Attach a WAV file before analysis.');
@@ -191,32 +238,60 @@ export function UploadAnalyzeCard() {
     abortControllerRef.current = controller;
 
     try {
+      const healthAge = lastHealthAt ? Date.now() - lastHealthAt : Number.POSITIVE_INFINITY;
+      if (healthAge > HEALTH_STALE_MS) {
+        const ready = await waitForBackendReady(controller.signal, HEALTH_MAX_WAIT_MS);
+        if (!ready) {
+          throw new Error('Backend is still waking up. Please wait about a minute and try again.');
+        }
+      }
+
       const formData = new FormData();
       formData.append('file', file);
       formData.append('machine_type', machineType);
 
-      const response = await fetch(`${API_BASE}/api/analyze-audio`, {
-        method: 'POST',
-        body: formData,
-        signal: controller.signal,
-      });
+      const sendAnalyzeRequest = async (): Promise<AnalyzeResponse> => {
+        const response = await fetch(`${API_BASE}/api/analyze-audio`, {
+          method: 'POST',
+          body: formData,
+          signal: controller.signal,
+        });
 
-      const contentType = response.headers.get('content-type') ?? '';
-      if (!contentType.includes('application/json')) {
-        throw new Error(
-          response.ok
-            ? 'Backend returned an unexpected response. It may still be starting up — try again shortly.'
-            : `Backend returned an error (${response.status}). It may still be waking up — try again in a moment.`
-        );
+        const contentType = response.headers.get('content-type') ?? '';
+        if (!contentType.includes('application/json')) {
+          if ([502, 503, 504].includes(response.status)) {
+            throw new Error(`TRANSIENT_BACKEND_${response.status}`);
+          }
+          throw new Error(
+            response.ok
+              ? 'Backend returned an unexpected response. It may still be starting up — try again shortly.'
+              : `Backend returned an error (${response.status}).`
+          );
+        }
+
+        const payload = await response.json();
+        if (!response.ok) {
+          throw new Error(payload.detail ?? `Backend error (${response.status}) while analyzing audio.`);
+        }
+        return payload as AnalyzeResponse;
+      };
+
+      try {
+        const payload = await sendAnalyzeRequest();
+        setResult(payload);
+      } catch (firstError) {
+        if (!(firstError instanceof Error) || !firstError.message.startsWith('TRANSIENT_BACKEND_')) {
+          throw firstError;
+        }
+
+        const ready = await waitForBackendReady(controller.signal, HEALTH_MAX_WAIT_MS);
+        if (!ready) {
+          throw new Error('Backend is still waking up. Please wait about a minute and try again.');
+        }
+
+        const retriedPayload = await sendAnalyzeRequest();
+        setResult(retriedPayload);
       }
-
-      const payload = await response.json();
-
-      if (!response.ok) {
-        throw new Error(payload.detail ?? 'Backend error while analyzing audio.');
-      }
-
-      setResult(payload as AnalyzeResponse);
     } catch (requestError) {
       if (requestError instanceof DOMException && requestError.name === 'AbortError') {
         return;

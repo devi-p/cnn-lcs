@@ -15,8 +15,11 @@ const bodyFont = Source_Sans_3({
 });
 
 export const metadata: Metadata = {
-  title: "EngineSense 3D | CNN-LCS Anomaly Detection",
+  title: "CNN-LCS Engine Anomaly Detection",
   description: "Upload engine WAV recordings and run CNN-LCS anomaly inference.",
+  icons: {
+    icon: "/icon.svg",
+  },
 };
 
 export default function RootLayout({
