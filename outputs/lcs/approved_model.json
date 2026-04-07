@@ -1,0 +1,24 @@
+{
+  "approved": true,
+  "run_id": "local-20260406-225114",
+  "artifact_dir": "C:\\Users\\9juan\\Documents\\WINTER 2026\\CMPUT 414\\Project\\cnn-lcs\\outputs\\lcs",
+  "created_at_utc": "2026-04-06T22:51:31.891123+00:00",
+  "training": {
+    "learning_iterations": 2000,
+    "selector_k": 50
+  },
+  "metrics": {
+    "accuracy": 0.9214583333333334,
+    "f1": 0.3599320882852292,
+    "precision": 0.5608465608465608,
+    "recall": 0.265,
+    "auc": 0.7096690340909091
+  },
+  "gates": {
+    "passed": true,
+    "checks": {
+      "artifacts_present": true,
+      "manual_approval": true
+    }
+  }
+}
