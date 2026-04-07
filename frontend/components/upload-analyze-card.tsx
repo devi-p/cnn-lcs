@@ -32,7 +32,7 @@ type AnalyzeResponse = {
   }>;
 };
 
-const API_BASE = (process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://127.0.0.1:8000').replace(/\/$/, '');
+const API_BASE = (process.env.NEXT_PUBLIC_API_BASE_URL ?? '').replace(/\/$/, '');
 const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024;
 const MAX_DURATION_SECONDS = 15;
 
@@ -170,7 +170,12 @@ export function UploadAnalyzeCard() {
       if (requestError instanceof DOMException && requestError.name === 'AbortError') {
         return;
       }
-      const message = requestError instanceof Error ? requestError.message : 'Unexpected request error.';
+      let message: string;
+      if (requestError instanceof TypeError && requestError.message === 'Failed to fetch') {
+        message = 'Unable to reach the analysis server. It may be starting up — please try again in a moment.';
+      } else {
+        message = requestError instanceof Error ? requestError.message : 'Unexpected request error.';
+      }
       setError(message);
     } finally {
       abortControllerRef.current = null;
