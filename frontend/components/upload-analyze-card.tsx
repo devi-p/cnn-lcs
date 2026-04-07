@@ -201,6 +201,15 @@ export function UploadAnalyzeCard() {
         signal: controller.signal,
       });
 
+      const contentType = response.headers.get('content-type') ?? '';
+      if (!contentType.includes('application/json')) {
+        throw new Error(
+          response.ok
+            ? 'Backend returned an unexpected response. It may still be starting up — try again shortly.'
+            : `Backend returned an error (${response.status}). It may still be waking up — try again in a moment.`
+        );
+      }
+
       const payload = await response.json();
 
       if (!response.ok) {
