@@ -12,9 +12,11 @@ service = InferenceService()
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     service.load()
-    lcs_state = "enabled" if service.has_lcs else "disabled"
+    lcs_status = service.get_lcs_status()
+    lcs_state = "enabled" if lcs_status["enabled"] else "disabled"
     print(f"Loaded checkpoint: {MODEL_CHECKPOINT}")
     print(f"Optional LCS inference: {lcs_state}")
+    print(f"LCS detail: {lcs_status['detail']}")
     yield
 
 
@@ -31,10 +33,14 @@ app.add_middleware(
 
 @app.get("/api/health")
 def health() -> dict:
+    lcs_status = service.get_lcs_status()
     return {
         "status": "ok",
         "service": "cnn-lcs-backend",
-        "lcs_enabled": service.has_lcs,
+        "lcs_enabled": lcs_status["enabled"],
+        "lcs_detail": lcs_status["detail"],
+        "lcs_artifact_dir": lcs_status["artifact_dir"],
+        "lcs_run_id": lcs_status["run_id"],
         "model_checkpoint": str(MODEL_CHECKPOINT),
     }
 

@@ -1,19 +1,26 @@
 import { SplineSceneBasic } from '@/components/ui/demo';
 import { UploadAnalyzeCard } from '@/components/upload-analyze-card';
 import { SiteHeader } from '@/components/site-header';
+import { HowItWorksTimeline } from '@/components/how-it-works-timeline';
+import { TechStackStrip } from '@/components/tech-stack-strip';
+import { WhyCnnLcs } from '@/components/why-cnn-lcs';
+import { BackgroundResearchSection } from '@/components/background-research-section';
+import { LimitationsAndFutureWork } from '@/components/limitations-and-future-work';
+import { SiteFooter } from '@/components/site-footer';
+import { SectionReveal } from '@/components/ui/section-reveal';
 
-const GITHUB_URL = process.env.NEXT_PUBLIC_GITHUB_URL ?? 'https://github.com/devi-p/cnn-lcs';
+const GITHUB_URL = 'https://github.com/devi-p/cnn-lcs';
 
 export default function Home() {
   return (
     <main className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top_left,#f8fcf9_0%,#eef5ef_58%)]">
-      <SiteHeader githubUrl={GITHUB_URL} />
-
       <section className="relative min-h-screen">
+        <SiteHeader githubUrl={GITHUB_URL} />
         <SplineSceneBasic />
       </section>
 
-      <section
+      <SectionReveal
+        as="section"
         id="upload-section"
         className="blueprint-grid relative flex min-h-screen items-center border-t border-green-800/25 px-4 py-10 sm:px-6 lg:px-8"
       >
@@ -32,7 +39,24 @@ export default function Home() {
 
           <UploadAnalyzeCard />
         </div>
-      </section>
+      </SectionReveal>
+
+      <SectionReveal delay={0.02}>
+        <HowItWorksTimeline />
+      </SectionReveal>
+      <SectionReveal delay={0.03}>
+        <TechStackStrip />
+      </SectionReveal>
+      <SectionReveal delay={0.04}>
+        <WhyCnnLcs />
+      </SectionReveal>
+      <SectionReveal delay={0.05}>
+        <BackgroundResearchSection />
+      </SectionReveal>
+      <SectionReveal delay={0.06}>
+        <LimitationsAndFutureWork />
+      </SectionReveal>
+      <SiteFooter githubUrl={GITHUB_URL} />
     </main>
   );
 }

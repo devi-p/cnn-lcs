@@ -2,8 +2,7 @@
 
 import React, { Suspense, useEffect, useRef } from 'react';
 import * as THREE from 'three';
-
-import { GradientDots } from '@/components/ui/gradient-dots';
+import { ArrowDown } from 'lucide-react';
 
 function GenerativeArtScene() {
   const mountRef = useRef<HTMLDivElement | null>(null);
@@ -181,7 +180,7 @@ function GenerativeArtScene() {
     };
   }, []);
 
-  return <div ref={mountRef} className="absolute inset-0 h-full w-full z-0" />;
+  return <div ref={mountRef} className="absolute inset-0 h-full w-full z-0" aria-hidden="true" />;
 }
 
 type AnomalousMatterHeroProps = {
@@ -204,19 +203,33 @@ export function AnomalousMatterHero({
         <GenerativeArtScene />
       </Suspense>
 
-      <GradientDots backgroundColor="transparent" duration={20} className="pointer-events-none z-[6] opacity-20" />
-
       <div className="absolute inset-0 z-10 bg-linear-to-t from-[hsl(var(--hero-bg))] via-[hsl(var(--hero-bg)/70%)] to-transparent" />
 
-      <div className="relative z-20 flex h-full flex-col items-center justify-end pb-20 pt-24 text-center md:pb-32 md:pt-28">
+      <div className="relative z-20 flex h-full flex-col items-center justify-center text-center">
         <div className="max-w-3xl px-4 animate-fade-in-long">
-          <h1 className="font-mono text-sm uppercase tracking-widest text-[hsl(var(--hero-neon-300)/85%)]">
+          <h1 className="font-heading text-sm uppercase tracking-widest text-[hsl(var(--hero-neon-300)/85%)]">
             {title}
           </h1>
           <p className="mt-4 text-3xl font-bold leading-tight md:text-5xl">{subtitle}</p>
           <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-[hsl(var(--hero-gray-300)/80%)]">
             {description}
           </p>
+
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <a
+              href="#upload-section"
+              className="inline-flex items-center gap-2 rounded-full border border-green-800/45 bg-white/90 px-5 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-green-100"
+            >
+              Analyze a recording
+              <ArrowDown className="h-5 w-5" />
+            </a>
+            <a
+              href="#how-it-works-section"
+              className="inline-flex items-center rounded-full border border-green-800/35 bg-white/75 px-4 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-green-100"
+            >
+              See pipeline flow
+            </a>
+          </div>
         </div>
       </div>
     </section>

@@ -27,6 +27,23 @@ From project root:
 uvicorn backend.main:app --reload
 ```
 
+## Enable LCS Inference Locally
+
+If `GET /api/health` reports `lcs_enabled: false`, generate LCS artifacts from extracted features:
+
+```bash
+python src/lcs/train_lcs.py --features-dir outputs/features --output-dir outputs/lcs --learning-iterations 10000
+```
+
+This command writes:
+
+- `outputs/lcs/lcs_model.pkl`
+- `outputs/lcs/scaler.pkl`
+- `outputs/lcs/selector.pkl`
+- `outputs/lcs/approved_model.json`
+
+Then restart the backend. Health response now includes `lcs_detail`, `lcs_artifact_dir`, and `lcs_run_id` for quick verification.
+
 ## Endpoint
 
 - `GET /api/health`

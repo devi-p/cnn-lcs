@@ -1,8 +1,46 @@
 venv/
+.venv/
 data/raw/
 data/segments/
 data/spectrograms/
-outputs/checkpoints/
+src/cnn/outputs/checkpoints/
+
+# Keep deployed model artifacts tracked
+# outputs/checkpoints/best_model.pth  — tracked
+# outputs/lcs/*.pkl + rules.csv        — tracked
+outputs/features/
+outputs/*.png
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
 .ipynb_checkpoints/
+
+# Python tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# OS and logs
+.DS_Store
+Thumbs.db
+*.log
+
+# Frontend artifacts
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/coverage/
+frontend/.turbo/
+frontend/.vercel/
+frontend/*.tsbuildinfo
+frontend/next-env.d.ts
