@@ -8,4 +8,4 @@ numpy>=1.24.0
 torch>=2.0.0
 torchvision>=0.15.0
 scikit-learn>=1.3.0
-#skExSTraCS>=1.0.8
+scikit-ExSTraCS>=1.1.0

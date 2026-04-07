@@ -525,9 +525,28 @@ class InferenceService:
         segments = self._segment_audio(audio, sample_rate)
         specs = self._segments_to_tensor(segments).to(self.device)
 
-        with torch.no_grad():
-            logits = self.model(specs)
-            cnn_scores = torch.softmax(logits, dim=1)[:, 1].cpu().numpy()
+        # Process in small batches to limit peak memory on constrained hosts
+        batch_size = 4
+        all_cnn_scores = []
+        all_features = []
+
+        for i in range(0, specs.shape[0], batch_size):
+            batch = specs[i : i + batch_size]
+            with torch.no_grad():
+                logits = self.model(batch)
+                batch_scores = torch.softmax(logits, dim=1)[:, 1].cpu().numpy()
+                all_cnn_scores.append(batch_scores)
+
+                if self.has_lcs and self.feature_extractor is not None:
+                    feats = self.feature_extractor(batch)
+                    feats = feats.squeeze(-1).squeeze(-1).cpu().numpy()
+                    all_features.append(feats)
+
+            del batch, logits
+            torch.cuda.empty_cache() if torch.cuda.is_available() else None
+
+        cnn_scores = np.concatenate(all_cnn_scores, axis=0)
+        del all_cnn_scores, specs
 
         cnn_probability = float(np.mean(cnn_scores))
         max_segment_probability = float(np.max(cnn_scores))
@@ -536,10 +555,9 @@ class InferenceService:
         inference_source = "cnn"
         anomaly_probability = cnn_probability
 
-        if self.has_lcs and self.feature_extractor is not None:
-            with torch.no_grad():
-                features = self.feature_extractor(specs)
-                features = features.squeeze(-1).squeeze(-1).cpu().numpy()
+        if self.has_lcs and self.feature_extractor is not None and all_features:
+            features = np.concatenate(all_features, axis=0)
+            del all_features
 
             scaled = self.scaler.transform(features)
             selected = self.selector.transform(scaled)
