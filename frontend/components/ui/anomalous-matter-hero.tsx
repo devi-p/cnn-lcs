@@ -205,12 +205,9 @@ export function AnomalousMatterHero({
 
       <div className="absolute inset-0 z-10 bg-linear-to-t from-[hsl(var(--hero-bg))] via-[hsl(var(--hero-bg)/70%)] to-transparent" />
 
-      <div className="relative z-20 flex h-full flex-col items-center justify-center text-center">
+      <div className="relative z-20 flex h-full flex-col items-center justify-center text-center" style={{ textShadow: '0 2px 12px hsl(var(--hero-bg)), 0 0 40px hsl(var(--hero-bg)/60%)' }}>
         <div className="max-w-3xl px-4 animate-fade-in-long">
-          <h1 className="font-heading text-sm uppercase tracking-widest text-[hsl(var(--hero-neon-300)/85%)]">
-            {title}
-          </h1>
-          <p className="mt-4 text-3xl font-bold leading-tight md:text-5xl">{subtitle}</p>
+          <h1 className="text-3xl font-bold leading-tight md:text-5xl">{subtitle}</h1>
           <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-[hsl(var(--hero-gray-300)/80%)]">
             {description}
           </p>
