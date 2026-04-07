@@ -2,7 +2,7 @@
 
 import { ChangeEvent, DragEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { Activity, AlertTriangle, AudioLines, Loader2, UploadCloud, X } from 'lucide-react';
+import { Activity, AlertTriangle, AudioLines, CheckCircle2, Loader2, UploadCloud, Wifi, WifiOff, X } from 'lucide-react';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -71,6 +71,48 @@ export function UploadAnalyzeCard() {
   const [result, setResult] = useState<AnalyzeResponse | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  const [backendStatus, setBackendStatus] = useState<'checking' | 'ready' | 'waking' | 'offline'>('checking');
+  const [wakeSeconds, setWakeSeconds] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    let wakeTimer: ReturnType<typeof setInterval> | null = null;
+
+    async function ping() {
+      try {
+        const res = await fetch(`${API_BASE}/api/health`, { method: 'GET' });
+        if (!cancelled) {
+          setBackendStatus(res.ok ? 'ready' : 'offline');
+          if (wakeTimer) clearInterval(wakeTimer);
+        }
+      } catch {
+        if (!cancelled && backendStatus === 'checking') {
+          setBackendStatus('waking');
+          setWakeSeconds(0);
+          wakeTimer = setInterval(() => {
+            if (cancelled) return;
+            setWakeSeconds((s) => s + 1);
+            fetch(`${API_BASE}/api/health`, { method: 'GET' })
+              .then((res) => {
+                if (!cancelled && res.ok) {
+                  setBackendStatus('ready');
+                  if (wakeTimer) clearInterval(wakeTimer);
+                }
+              })
+              .catch(() => {});
+          }, 3000);
+        }
+      }
+    }
+
+    ping();
+    return () => {
+      cancelled = true;
+      if (wakeTimer) clearInterval(wakeTimer);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!isLoading) {
@@ -193,6 +235,33 @@ export function UploadAnalyzeCard() {
         <CardDescription className="text-slate-600">
           Drop a 5-15 second engine recording and run CNN-LCS inference.
         </CardDescription>
+        <div className="mt-2">
+          {backendStatus === 'ready' && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-2.5 py-1 text-xs font-medium text-green-800">
+              <CheckCircle2 className="h-3 w-3" />
+              Backend ready
+            </span>
+          )}
+          {backendStatus === 'checking' && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              Connecting to backend…
+            </span>
+          )}
+          {backendStatus === 'waking' && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800">
+              <Wifi className="h-3 w-3 animate-pulse" />
+              Waking up backend… {wakeSeconds}s
+              <span className="ml-1 font-normal text-amber-700">(free tier cold start)</span>
+            </span>
+          )}
+          {backendStatus === 'offline' && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-800">
+              <WifiOff className="h-3 w-3" />
+              Backend unreachable
+            </span>
+          )}
+        </div>
       </CardHeader>
 
       <CardContent className="space-y-5">
