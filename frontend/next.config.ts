@@ -1,13 +1,9 @@
 import type { NextConfig } from "next";
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import path from "path";
 
 const nextConfig: NextConfig = {
   turbopack: {
-    root: __dirname,
+    root: path.resolve("."),
   },
   async rewrites() {
     const backendUrl = process.env.BACKEND_URL || "http://localhost:8000";
