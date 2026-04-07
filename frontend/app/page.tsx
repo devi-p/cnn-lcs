@@ -5,6 +5,7 @@ import { HowItWorksTimeline } from '@/components/how-it-works-timeline';
 import { TechStackStrip } from '@/components/tech-stack-strip';
 import { WhyCnnLcs } from '@/components/why-cnn-lcs';
 import { BackgroundResearchSection } from '@/components/background-research-section';
+import { ResultsAndTuningSection } from '@/components/results-and-tuning-section';
 import { LimitationsAndFutureWork } from '@/components/limitations-and-future-work';
 import { SiteFooter } from '@/components/site-footer';
 import { SectionReveal } from '@/components/ui/section-reveal';
@@ -50,12 +51,9 @@ export default function Home() {
       <SectionReveal delay={0.04}>
         <WhyCnnLcs />
       </SectionReveal>
-      <SectionReveal delay={0.05}>
-        <BackgroundResearchSection />
-      </SectionReveal>
-      <SectionReveal delay={0.06}>
-        <LimitationsAndFutureWork />
-      </SectionReveal>
+      <BackgroundResearchSection />
+      <ResultsAndTuningSection />
+      <LimitationsAndFutureWork />
       <SiteFooter githubUrl={GITHUB_URL} />
     </main>
   );
