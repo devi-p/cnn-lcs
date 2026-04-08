@@ -42,7 +42,7 @@ const HEALTH_STALE_MS = 30_000;
 type DemoSampleConfig = {
   id: string;
   title: string;
-  likelyProfile: 'Likely normal' | 'Likely anomalous';
+  datasetLabel: 'Normal' | 'Anomalous';
   machineType: 'bearing' | 'gearbox';
   fileName: string;
   fileUrl: string;
@@ -52,7 +52,7 @@ const DEMO_SAMPLE_LIBRARY: DemoSampleConfig[] = [
   {
     id: 'bearing-sample-normal',
     title: 'Bearing sample A',
-    likelyProfile: 'Likely normal',
+    datasetLabel: 'Normal',
     machineType: 'bearing',
     fileName: 'bearing-likely-normal.wav',
     fileUrl: '/demo-samples/bearing-likely-normal.wav',
@@ -60,7 +60,7 @@ const DEMO_SAMPLE_LIBRARY: DemoSampleConfig[] = [
   {
     id: 'bearing-sample-anomalous',
     title: 'Bearing sample B',
-    likelyProfile: 'Likely anomalous',
+    datasetLabel: 'Anomalous',
     machineType: 'bearing',
     fileName: 'bearing-likely-anomalous.wav',
     fileUrl: '/demo-samples/bearing-likely-anomalous.wav',
@@ -68,7 +68,7 @@ const DEMO_SAMPLE_LIBRARY: DemoSampleConfig[] = [
   {
     id: 'gearbox-sample-normal',
     title: 'Gearbox sample A',
-    likelyProfile: 'Likely normal',
+    datasetLabel: 'Normal',
     machineType: 'gearbox',
     fileName: 'gearbox-likely-normal.wav',
     fileUrl: '/demo-samples/gearbox-likely-normal.wav',
@@ -76,7 +76,7 @@ const DEMO_SAMPLE_LIBRARY: DemoSampleConfig[] = [
   {
     id: 'gearbox-sample-anomalous',
     title: 'Gearbox sample B',
-    likelyProfile: 'Likely anomalous',
+    datasetLabel: 'Anomalous',
     machineType: 'gearbox',
     fileName: 'gearbox-likely-anomalous.wav',
     fileUrl: '/demo-samples/gearbox-likely-anomalous.wav',
@@ -460,7 +460,7 @@ export function UploadAnalyzeCard() {
             <span className="text-[11px] text-green-900/70">Curated raw clips from project data</span>
           </div>
           <p className="mb-3 text-xs text-slate-600">
-            Useful for live demos when no file is available. Markers are likely profiles, not guaranteed labels.
+            Useful for live demos when no file is available. These labels come from the dataset; model predictions may differ.
           </p>
           <div className="grid gap-2 sm:grid-cols-2">
             {DEMO_SAMPLE_LIBRARY.map((sample) => {
@@ -469,7 +469,7 @@ export function UploadAnalyzeCard() {
                 <div key={sample.id} className="rounded-lg border border-green-900/15 bg-white p-2.5">
                   <p className="text-sm font-medium text-slate-900">{sample.title}</p>
                   <p className="mt-0.5 text-xs text-slate-500">
-                    Machine preset: {sample.machineType} • {sample.likelyProfile}
+                    Machine preset: {sample.machineType} • Dataset label: {sample.datasetLabel}
                   </p>
                   <div className="mt-2 flex gap-2">
                     <button
