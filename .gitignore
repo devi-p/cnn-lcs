@@ -33,6 +33,7 @@ htmlcov/
 .DS_Store
 Thumbs.db
 *.log
+Using_CNN_LCS_for_Engine_Sound_Anomaly_Detection.pdf
 
 # Frontend artifacts
 frontend/node_modules/
