@@ -1,4 +1,13 @@
-# CNN-LCS Audio Preprocessing Pipeline
+# CNN-LCS Engine Sound Anomaly Detection
+
+This project combines a CNN-based acoustic classifier with an LCS-based rule layer for machine sound anomaly detection. It includes:
+
+- data preprocessing scripts (audio segmentation + mel-spectrogram generation)
+- CNN training and evaluation utilities
+- LCS artifacts used in inference
+- a FastAPI backend for audio analysis
+- a Next.js frontend for upload and visualization
+- Docker deployment files for a single-port Hugging Face Space setup
 
 ## Setup Instructions
 
@@ -70,7 +79,7 @@ Notes:
 
 ### 4. Download and extract data
 
-Download `dev_bearing.zip` and `dev_gearbox.zip` from the Zenodo link.
+Download `dev_bearing.zip` and `dev_gearbox.zip` from your project dataset source.
 
 Place and extract them into:
 
@@ -155,24 +164,39 @@ Run training (local or Colab):
 PYTHONPATH=. python3 src/cnn/train.py
 ```
 
-The training script now:
+The training script:
 
 - uses class-balanced sampling (`WeightedRandomSampler`) for training batches
 - keeps class-weighted cross-entropy loss to prioritize anomaly recall
 - prints the best anomaly-class threshold search result (best threshold, precision, recall, F1)
 - prints a threshold `0.50` comparison for easy baseline tracking
 
-## Expected Final Outputs
+## Expected Core Outputs
 
 - `data/dataset_split.csv`: `2400` rows
 - `data/segments_split.csv`: `24000` rows
 - `data/spectrograms_split.csv`: `24000` rows
-- Spectrogram shape consistency: `(128, 32)` across all files
+- spectrogram shape consistency: `(128, 32)` across all files
 
-## Handoff to Person 3
+## Docker Run (Single Container)
 
-Use:
+Build and run:
 
-- `data/spectrograms_split.csv`
+```bash
+docker build -t cnn-lcs-hf .
+docker run --rm -p 7860:7860 cnn-lcs-hf
+```
 
-This is the training manifest for the CNN stage.
+Service routes in the container:
+
+- frontend: `http://localhost:7860/`
+- backend health: `http://localhost:7860/api/health`
+
+## Repository Map
+
+- `backend/`: FastAPI app, config, inference pipeline
+- `frontend/`: Next.js UI and components
+- `src/`: training and preprocessing modules (`cnn`, `lcs`, `preprocessing`)
+- `data/`: split manifests
+- `outputs/`: model checkpoints and LCS artifacts used for inference
+- `notebooks/`: preprocessing and sanity-check scripts

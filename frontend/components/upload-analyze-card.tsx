@@ -2,7 +2,7 @@
 
 import { ChangeEvent, DragEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { Activity, AlertTriangle, AudioLines, CheckCircle2, Loader2, UploadCloud, Wifi, WifiOff, X } from 'lucide-react';
+import { Activity, AlertTriangle, AudioLines, CheckCircle2, Loader2, Play, UploadCloud, Wifi, WifiOff, X } from 'lucide-react';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -39,8 +39,61 @@ const HEALTH_MAX_WAIT_MS = 75_000;
 const HEALTH_POLL_MS = 2_500;
 const HEALTH_STALE_MS = 30_000;
 
+type DemoSampleConfig = {
+  id: string;
+  title: string;
+  datasetLabel: 'Normal' | 'Anomalous';
+  machineType: 'bearing' | 'gearbox';
+  fileName: string;
+  fileUrl: string;
+};
+
+const DEMO_SAMPLE_LIBRARY: DemoSampleConfig[] = [
+  {
+    id: 'bearing-sample-normal',
+    title: 'Bearing sample A',
+    datasetLabel: 'Normal',
+    machineType: 'bearing',
+    fileName: 'bearing-likely-normal.wav',
+    fileUrl: '/demo-samples/bearing-likely-normal.wav',
+  },
+  {
+    id: 'bearing-sample-anomalous',
+    title: 'Bearing sample B',
+    datasetLabel: 'Anomalous',
+    machineType: 'bearing',
+    fileName: 'bearing-likely-anomalous.wav',
+    fileUrl: '/demo-samples/bearing-likely-anomalous.wav',
+  },
+  {
+    id: 'gearbox-sample-normal',
+    title: 'Gearbox sample A',
+    datasetLabel: 'Normal',
+    machineType: 'gearbox',
+    fileName: 'gearbox-likely-normal.wav',
+    fileUrl: '/demo-samples/gearbox-likely-normal.wav',
+  },
+  {
+    id: 'gearbox-sample-anomalous',
+    title: 'Gearbox sample B',
+    datasetLabel: 'Anomalous',
+    machineType: 'gearbox',
+    fileName: 'gearbox-likely-anomalous.wav',
+    fileUrl: '/demo-samples/gearbox-likely-anomalous.wav',
+  },
+];
+
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function fetchDemoSampleFile(sample: DemoSampleConfig): Promise<File> {
+  const response = await fetch(sample.fileUrl, { cache: 'no-store' });
+  if (!response.ok) {
+    throw new Error(`Could not load sample file (${response.status}).`);
+  }
+  const blob = await response.blob();
+  return new File([blob], sample.fileName, { type: 'audio/wav' });
 }
 
 async function getAudioDurationSeconds(file: File): Promise<number> {
@@ -77,6 +130,7 @@ export function UploadAnalyzeCard() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AnalyzeResponse | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [sampleBusyId, setSampleBusyId] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const [backendStatus, setBackendStatus] = useState<'checking' | 'ready' | 'waking' | 'offline'>('checking');
@@ -189,6 +243,34 @@ export function UploadAnalyzeCard() {
     setIsDragging(false);
     await handleFileSelect(event.dataTransfer.files?.[0] ?? null);
   };
+
+  const selectDemoSample = useCallback(
+    async (sample: DemoSampleConfig) => {
+      try {
+        setSampleBusyId(sample.id);
+        const demoFile = await fetchDemoSampleFile(sample);
+        setMachineType(sample.machineType);
+        await handleFileSelect(demoFile);
+      } catch {
+        setError('Failed to load demo sample. Please try again.');
+      } finally {
+        setSampleBusyId(null);
+      }
+    },
+    [handleFileSelect]
+  );
+
+  const previewDemoSample = useCallback(async (sample: DemoSampleConfig) => {
+    try {
+      setSampleBusyId(sample.id);
+      const audio = new Audio(sample.fileUrl);
+      await audio.play();
+    } catch {
+      setError('Unable to preview this demo sample.');
+    } finally {
+      setSampleBusyId(null);
+    }
+  }, []);
 
   const waitForBackendReady = useCallback(
     async (signal: AbortSignal, maxWaitMs: number): Promise<boolean> => {
@@ -371,6 +453,48 @@ export function UploadAnalyzeCard() {
           </div>
           <input className="hidden" type="file" accept=".wav,audio/wav" onChange={onInputChange} />
         </label>
+
+        <div className="rounded-xl border border-green-800/20 bg-green-50/40 p-3">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-green-900/85">Quick demo library</p>
+            <span className="text-[11px] text-green-900/70">Curated raw clips from project data</span>
+          </div>
+          <p className="mb-3 text-xs text-slate-600">
+            Useful for live demos when no file is available. These labels come from the dataset; model predictions may differ.
+          </p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {DEMO_SAMPLE_LIBRARY.map((sample) => {
+              const isBusy = sampleBusyId === sample.id;
+              return (
+                <div key={sample.id} className="rounded-lg border border-green-900/15 bg-white p-2.5">
+                  <p className="text-sm font-medium text-slate-900">{sample.title}</p>
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    Machine preset: {sample.machineType} • Dataset label: {sample.datasetLabel}
+                  </p>
+                  <div className="mt-2 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => previewDemoSample(sample)}
+                      disabled={isBusy || isLoading}
+                      className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-slate-300 bg-white px-2.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <Play className="h-3 w-3" />
+                      Preview
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => selectDemoSample(sample)}
+                      disabled={isBusy || isLoading}
+                      className="inline-flex h-8 items-center justify-center rounded-md bg-green-700 px-2.5 text-xs font-semibold text-white transition hover:bg-green-600 disabled:cursor-not-allowed disabled:bg-slate-300"
+                    >
+                      {isBusy ? 'Loading...' : 'Use sample'}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
 
         <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
           <div className="space-y-2">
