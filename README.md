@@ -33,6 +33,39 @@ venv\Scripts\activate
 pip install librosa soundfile scikit-learn pandas matplotlib numpy torch torchvision
 ```
 
+## Run Web App Locally (Backend + Frontend)
+
+Open two terminals from the repo root (`cnn-lcs`).
+
+### Terminal 1: Backend (FastAPI)
+
+```bash
+pip install -r backend/requirements.txt
+uvicorn backend.main:app --host 0.0.0.0 --port 8000
+```
+
+Backend endpoints:
+
+- `http://localhost:8000/api/health`
+- `http://localhost:8000/api/analyze-audio`
+
+### Terminal 2: Frontend (Next.js)
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open:
+
+- `http://localhost:3000`
+
+Notes:
+
+- The frontend proxies `/api/*` to the backend at `http://localhost:8000` by default in local development.
+- If you change backend port/url, set `BACKEND_URL` before running `npm run dev`.
+
 ## Data Setup
 
 ### 4. Download and extract data
